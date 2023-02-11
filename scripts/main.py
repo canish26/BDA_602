@@ -1,27 +1,12 @@
-# from urllib.request import urlretrieve
-# import chart_studio.plotly as py
-
-# import numpy as np
+import chart_studio.plotly as py
+import numpy as np
 import pandas as pd
-
-# from plotly.offline import init_notebook_mode, iplot
-# from sklearn.datasets import load_iris
-import plotly as py
 import plotly.figure_factory as ff
 import plotly.graph_objs as go
-
-# Data Split Libraries
-# import sklearn
 import spark as spark
-
-# import plotly.graph_objects as go
 from pandas import DataFrame
 from plotly.offline import init_notebook_mode, iplot
-
-# Apache Spark Pipelin Library
 from pyspark.ml import Pipeline
-
-# Apache Spark ML CLassifier Libraries
 from pyspark.ml.classification import (
     DecisionTreeClassifier,
     LogisticRegression,
@@ -37,6 +22,7 @@ from pyspark.ml.feature import StandardScaler, StringIndexer
 
 # Apache Spark `DenseVector`
 from pyspark.ml.linalg import DenseVector
+from sklearn.datasets import load_iris
 
 # from pyspark.sql import SparkSession
 from sklearn.decomposition import PCA
@@ -44,23 +30,15 @@ from sklearn.decomposition import PCA
 # Tabulating Data
 from tabulate import tabulate
 
-# Apache Spark Libraries
-# import pyspark
-
-
-# from sklearn.model_selection import train_test_split
-
-
 init_notebook_mode(connected=True)
-# from sklearn.ensemble import RandomForestClassifier
-# from sklearn.model_selection import train_test_split
+
 
 iris = "http://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data"
 df = pd.read_csv(iris, sep=",")
 attributes = ["sepal_length", "sepal_width", "petal_length", "petal_width", "Species"]
 df.columns = attributes
 
-iris_obj = iris()
+iris_obj = load_iris()
 # Dataset preview
 iris_obj.data  # Names of the columns
 iris_obj.feature_names  # Target variable
@@ -201,6 +179,21 @@ iris.species.replace({0: "setosa", 1: "versicolor", 2: "virginica"}, inplace=Tru
 setosa = iris[iris["species"] == "Iris-setosa"]
 versicolor = iris[iris["species"] == "Iris-versicolor"]
 virginica = iris[iris["species"] == "Iris-virginica"]
+
+
+def stats(array, column_list):
+
+    mean = np.mean(array, axis=0)
+    min = np.min(array, axis=0)
+    max = np.max(array, axis=0)
+    quant = np.quantile(array, [0.95, 0.75, 0.25], axis=0)
+    out_arr = np.vstack((mean, min, max, quant))
+    out_df = pd.DataFrame(
+        data=out_arr,
+        index=["mean", "min", "max", "quartile", "median", "third quartile"],
+        columns=column_list,
+    )
+    return out_df
 
 
 iris_grps = iris.groupby("species")

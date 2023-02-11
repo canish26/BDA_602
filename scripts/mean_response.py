@@ -1,10 +1,6 @@
 import numpy as np
 import pandas as pd
-
-# import plotly.express as px
 import plotly.graph_objects as go
-
-# from plotly.subplots import make_subplots
 
 csv_url = "https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data"
 attributes = ["sepal_length", "sepal_width", "petal_length", "petal_width", "Species"]
@@ -82,6 +78,6 @@ fig.update_layout(
         tickmode="auto",
     ),
 )
-
+fig.write_html(file="Diff Plot Iris Setosa.html", include_plotlyjs="cdn")
 # Set x-axis title
 fig.update_xaxes(title_text="Predictor Bins")
