@@ -7,6 +7,22 @@ attributes = ["sepal_length", "sepal_width", "petal_length", "petal_width", "Spe
 
 iris = pd.read_csv(csv_url, names=attributes)
 
+
+def numpy_stats(array, column_list):
+
+    mean = np.mean(array, axis=1)
+    min = np.min(array, axis=1)
+    max = np.max(array, axis=1)
+    quant = np.quantile(array, [0.25, 0.75, 0.95], axis=0)
+    out_arr = np.vstack((mean, min, max, quant))
+    out_df = pd.DataFrame(
+        data=out_arr,
+        index=["mean", "min", "max", "quartile", "median", "third quartile"],
+        columns=column_list,
+    )
+    return out_df
+
+
 iris_sepal_length = iris[["sepal_length", "Species"]]
 
 a = np.array(iris_sepal_length["sepal_length"])
