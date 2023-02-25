@@ -55,16 +55,16 @@ ALTER table game_bat_int add index batter_index(batter);
 
 ALTER table game_bat_int add index date_index(local_date);
 
-
 ##############
 DROP TABLE temp_roll_avg_intermediate;
 -- create temp table to store data
 CREATE TABLE temp_roll_avg_intermediate
 AS (
-  SELECT bc.batter, g.local_date, bc.hit, bc.atBat
+  SELECT bc.batter, DATE(g.local_date), bc.hit, bc.atBat
   FROM batter_counts AS bc
   LEFT JOIN game AS g
   ON bc.game_id = g.game_id
+  GROUP BY batter, local_date  
 );
 -- creating index
 CREATE INDEX idx_batter ON temp_roll_avg_intermediate(batter);
