@@ -1,5 +1,9 @@
 use baseball;
-SELECT local_date  FROM game LIMIT 0, 20;
+-- batter_counts table
+SELECT batter, game_id, Hit, atBat FROM batter_counts ORDER BY batter, game_id LIMIT 0, 20;
+
+-- Game Table
+SELECT game_id, local_date, YEAR(local_date) AS game_year FROM game LIMIT 0, 20;
 -- Creating Tables to store the calculated averages
 -- Historic batting average for each player
 DROP TABLE IF EXISTS batt_avg_hist;
@@ -40,7 +44,7 @@ ALTER TABLE batt_avg_annual ADD PRIMARY KEY (batter, For_Year);
 SELECT * FROM batt_avg_annual ;
 
 #############
-CREATE table IF NOT EXISTS game_bat_int as
+CREATE TABLE IF NOT EXISTS game_bat_int as
 select bc.game_id, bc.batter, local_date, bc.hit, bc.atBat, g.local_date
 from batter_counts bc
 inner join game g on bc.game_id=g.game_id;
@@ -55,7 +59,7 @@ ALTER table game_bat_int add index date_index(local_date);
 ##############
 DROP TABLE temp_roll_avg_intermediate;
 -- create temp table to store data
-CREATE  TABLE temp_roll_avg_intermediate
+CREATE TABLE temp_roll_avg_intermediate
 AS (
   SELECT bc.batter, g.local_date, bc.hit, bc.atBat
   FROM batter_counts AS bc
