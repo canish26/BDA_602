@@ -58,7 +58,7 @@ ALTER table game_bat_int add index date_index(local_date);
 ##############
 DROP TABLE temp_roll_avg_intermediate;
 -- create temp table to store data
-CREATE TABLE temp_roll_avg_intermediate
+CREATE TABLE IF NOT EXISTS temp_roll_avg_intermediate
 AS (
   SELECT bc.batter, DATE(g.local_date), bc.hit, bc.atBat
   FROM batter_counts AS bc
@@ -71,15 +71,14 @@ CREATE INDEX idx_batter ON temp_roll_avg_intermediate(batter);
 CREATE INDEX idx_date ON temp_roll_avg_intermediate(local_date);
 CREATE INDEX idx_batter_date ON temp_roll_avg_intermediate(batter, local_date);
 
-DROP table tmp_rolling_avg;
+DROP table temp_roll_avg;
 -- Rolling avg
-CREATE TEMPORARY TABLE temp_roll_avg
+CREATE TEMPORARY TABLE IF NOT EXISTS temp_roll_avg
 AS (
   SELECT a.batter, a.local_date, (SUM(b.hit) / NULLIF(SUM(b.atBat), 0)) AS rolling_avg
   FROM temp_roll_avg_intermediate AS a
   JOIN temp_roll_avg_intermediate AS b
   ON a.batter = b.batter AND a.local_date > b.local_date AND b.local_date BETWEEN a.local_date - INTERVAL 100 DAY AND a.local_date
-  WHERE a.batter = 435623
   GROUP BY a.batter, a.local_date
 );
 
