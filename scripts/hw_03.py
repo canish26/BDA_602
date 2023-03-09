@@ -50,24 +50,18 @@ def data(sparksession, query):
 
 def main():
     sparksession = SparkSession.builder.master("local[*]").getOrCreate()
-    #    gamesql = "SELECT * FROM game"
-    battersql = "SELECT * FROM batter_counts"
-    game = data(sparksession, battersql)
+    game_sql = "SELECT game_id, local_date, YEAR(local_date) AS game_year FROM game"
+    batter_sql = "SELECT batter, game_id, Hit, atBat FROM batter_counts"
+    game = data(sparksession, batter_sql)
     game.createOrReplaceTempView("game")
     game.persist(StorageLevel.MEMORY_ONLY)
-    batter_count = data(sparksession, battersql)
+    batter_count = data(sparksession, batter_sql)
     batter_count.createOrReplaceTempView("batter_count")
     batter_count.persist(StorageLevel.MEMORY_ONLY)
 
     table_join_query = batter_count.join(game, on="game_id")
     table_join_query.createOrReplaceTempView("table_join_query")
     table_join_query.persist(StorageLevel.MEMORY_ONLY)
-
-
-#    roll_avg_t = RollingTransformer()
-
-
-#    roll_avg = roll_avg_t._transform(sparksession, table_join_query)
 
 
 if __name__ == "__main__":
