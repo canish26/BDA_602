@@ -37,7 +37,7 @@ class RollingAverageTransform(Transformer):
         rolling_avg.persist(StorageLevel.MEMORY_ONLY)
         return rolling_avg
 
-
+# Create a data frame by reading data from MySQL via JDBC
 def load_data(sparksession, query):
     df = (
         sparksession.read.format("jdbc")
