@@ -97,14 +97,6 @@ class Test_Dataset:
         data_set.reset_index(drop=True, inplace=True)
         return data_set, predictors, response
 
-
-# if __name__ == "__main__":
-#    df_list = []
-#    test_datasets = Test_Dataset()
-#    for test in test_datasets.get_all_available_datasets():
-#        df, predictors, response = test_datasets.get_test_dataset(data_set_name=test)
-#        df_list.append([df, predictors, response])
-
 if __name__ == "__main__":
     test_datasets = Test_Dataset()
     df_list = [
