@@ -237,27 +237,32 @@ df_list[2][1]
 
 len(df_list[4][1])
 data_set = df_list[4][0]
-predictors = df_list[4][1]
-response = df_list[4][2]
+pred = df_list[4][1]
+resp = df_list[4][2]
 
-unique_values = data_set[response].unique()
-if np.issubdtype(unique_values.dtype, np.number) and len(unique_values) > 2:
-    resp_type = "Continuous"
-elif len(unique_values) == 2:
-    resp_type = "Boolean"
-else:
-    print("Nunber of cat.. my response variable got?")
-
-for col in predictors:
-    if np.issubdtype(data_set[col].dtype, np.number):
-        pred_type = "Continuous"
+def get_response_type(data_set, resp):
+    unique_values = data_set[resp].unique()
+    if np.issubdtype(unique_values.dtype, np.number) and len(unique_values) > 2:
+        return "Continuous"
+    elif len(unique_values) == 2:
+        return "Boolean"
     else:
-        pred_type = "Categorical"
+        raise ValueError("Response variable has too many categories")
+
+def get_predictor_type(data_set, col):
+    if np.issubdtype(data_set[col].dtype, np.number):
+        return "Continuous"
+    else:
+        return "Categorical"
+
+for col in pred:
+    pred_type = get_predictor_type(data_set, col)
+    resp_type = get_response_type(data_set, resp)
     ploting_graphs(
         data_set,
         pred_col=col,
         pred_type=pred_type,
-        resp_col=response,
+        resp_col=resp,
         resp_type=resp_type,
     )
 
