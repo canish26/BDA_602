@@ -97,12 +97,21 @@ class Test_Dataset:
         data_set.reset_index(drop=True, inplace=True)
         return data_set, predictors, response
 
+
+# if __name__ == "__main__":
+#    df_list = []
+#    test_datasets = Test_Dataset()
+#    for test in test_datasets.get_all_available_datasets():
+#        df, predictors, response = test_datasets.get_test_dataset(data_set_name=test)
+#        df_list.append([df, predictors, response])
+
 if __name__ == "__main__":
     test_datasets = Test_Dataset()
     df_list = [
         [df, predictors, response]
         for df, predictors, response in [
             test_datasets.get_test_dataset(data_set_name=test)
+            # Change the dataset name above to get the results of dataset you wish from test datasets
             for test in test_datasets.get_all_available_datasets()
         ]
     ]
@@ -137,6 +146,14 @@ def cat_resp_cont_pred(data_set, pred_col, resp_col):
         .reset_index()["index"]
         .astype("string")
     )
+    # Calculate unweighted mean response
+    unweighted_mean = data_set[resp_col].mean()
+
+    # Calculate weighted mean response
+    weighted_mean = data_set.groupby(pred_col)[resp_col].mean().mean()
+
+    # Calculate difference in means
+    diff_means = weighted_mean - unweighted_mean
 
     # created using the px.histogram() function from Plotly Express
     # Create distribution plot with custom bin_size
@@ -169,6 +186,43 @@ def cat_resp_cont_pred(data_set, pred_col, resp_col):
     )
     fig_2.show()
 
+    # Add vertical lines for mean responses
+    fig_1.add_shape(
+        type="line",
+        x0=unweighted_mean,
+        y0=0,
+        x1=unweighted_mean,
+        y1=1,
+        line=dict(color="black", dash="dash"),
+    )
+    fig_1.add_annotation(
+        x=unweighted_mean,
+        y=1.02,
+        text="Unweighted Mean: {:.2f}".format(unweighted_mean),
+        showarrow=False,
+    )
+
+    fig_2.add_shape(
+        type="line",
+        x0=weighted_mean,
+        y0=data_set[resp_col].min(),
+        x1=weighted_mean,
+        y1=data_set[resp_col].max(),
+        line=dict(color="black", dash="dash"),
+    )
+    fig_2.add_annotation(
+        x=weighted_mean,
+        y=data_set[resp_col].max()
+        + 0.1 * (data_set[resp_col].max() - data_set[resp_col].min()),
+        text="Weighted Mean: {:.2f}".format(weighted_mean),
+        showarrow=False,
+    )
+
+    fig_1.show()
+    fig_2.show()
+
+    print("Difference in means: {:.2f}".format(diff_means))
+
 
 def cont_resp_cat_pred(data_set, pred_col, resp_col):
     # Group data together
@@ -177,6 +231,14 @@ def cont_resp_cat_pred(data_set, pred_col, resp_col):
     ]
 
     group_labels = data_set[pred_col].unique()
+
+    grouped_data = data_set.groupby(pred_col)
+    unweighted_mean = grouped_data[resp_col].mean()
+    weighted_mean = grouped_data.apply(
+        lambda x: np.average(x[resp_col], weights=x["weight_col"])
+    )
+
+    mean_diff = weighted_mean - unweighted_mean
 
     # created using the px.histogram() function from Plotly Express
     # Create distribution plot with custom bin_size
@@ -209,6 +271,56 @@ def cont_resp_cat_pred(data_set, pred_col, resp_col):
     )
     fig_2.show()
 
+    fig_3 = px.bar(
+        x=mean_diff.index,
+        y=mean_diff.values,
+        labels={"x": pred_col, "y": "Weighted mean - Unweighted mean"},
+        title="Difference with mean of response",
+    )
+    fig_3.show()
+
+    # unweighted histogram
+    fig_4 = px.histogram(
+        data_set,
+        x=resp_col,
+        color=pred_col,
+        histnorm="probability density",
+        marginal="rug",  # add rug plot to show distribution
+    )
+    fig_4.update_layout(
+        title="Continuous "
+        + resp_col
+        + " vs "
+        + " Categorical "
+        + pred_col
+        + " (Unweighted)",
+        xaxis_title=resp_col,
+        yaxis_title="Probability Density",
+    )
+
+    # weighted histogram
+    fig_5 = px.histogram(
+        data_set,
+        x=resp_col,
+        color=pred_col,
+        histnorm="probability density",
+        marginal="rug",  # add rug plot to show distribution
+        weights="weight_col",  # add weight_col to weight the data
+    )
+    fig_5.update_layout(
+        title="Continuous "
+        + resp_col
+        + " vs "
+        + " Categorical "
+        + pred_col
+        + " (Weighted)",
+        xaxis_title=resp_col,
+        yaxis_title="Probability Density",
+    )
+
+    fig_4.show()
+    fig_5.show()
+
 
 # used the px.scatter() function from Plotly Express
 def cont_resp_cont_pred(data_set, pred_col, resp_col):
@@ -240,6 +352,7 @@ data_set = df_list[4][0]
 pred = df_list[4][1]
 resp = df_list[4][2]
 
+
 def get_response_type(data_set, resp):
     unique_values = data_set[resp].unique()
     if np.issubdtype(unique_values.dtype, np.number) and len(unique_values) > 2:
@@ -249,11 +362,13 @@ def get_response_type(data_set, resp):
     else:
         raise ValueError("Response variable has too many categories")
 
+
 def get_predictor_type(data_set, col):
     if np.issubdtype(data_set[col].dtype, np.number):
         return "Continuous"
     else:
         return "Categorical"
+
 
 for col in pred:
     pred_type = get_predictor_type(data_set, col)
