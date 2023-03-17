@@ -327,7 +327,17 @@ def cont_resp_cat_pred(data_set, pred_col, resp_col):
     print(f"P-value for {pred_col}: {p_value}")
     print(f"T-score for {pred_col}: {t_score}")
 
-    # create linear regression plots
+
+    # Create scatter plot with regression line
+    fig = px.scatter(data_set, x=pred_col, y=resp_col, trendline="ols")
+    fig.update_layout(
+        title="Continuous " + resp_col + " vs " + " Continuous " + pred_col,
+        xaxis_title=pred_col,
+        yaxis_title=resp_col,
+    )
+    fig.show()
+
+    # create logistic regression plots
     fig = plot_regress_exog(results, pred_col)
     fig.tight_layout()
     fig.show()
