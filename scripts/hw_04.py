@@ -1,5 +1,5 @@
 import random
-
+import os
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -115,6 +115,38 @@ def main():
         )
     df_list[4][0].iloc[:, 18:]
 
+@staticmethod
+def creating_plot_dir():
+    this_dir = os.path.dirname(os.path.realpath(__file__))
+    out_dir = f"{this_dir}/Plots"
+    os.makedirs(out_dir, exist_ok=True)
+    return out_dir
+
+def combine_html(one, two, three, optional=None):
+    # Reading data from file1
+    with open(one) as fp:
+        data = fp.read()
+
+    # Reading data from file2
+    with open(two) as fp:
+        data2 = fp.read()
+
+    # Merging 2 files
+    # To add the data of file2
+    # from next line
+    data += "\n"
+    data += "<hr>"
+    data += data2
+
+    if optional is not None:
+        with open(optional) as fp:
+            data3 = fp.read()
+        data += "<hr>"
+        data += data3
+
+    with open(three, "w") as fp:
+        fp.write(data)
+
 def cat_resp_cat_pred(data_set, pred_col, resp_col, weight_col=None):
     X = data_set[pred_col]
     y = data_set[resp_col]
@@ -172,6 +204,11 @@ def cat_resp_cat_pred(data_set, pred_col, resp_col, weight_col=None):
         yaxis_title="Probability Density",
     )
     fig_unweighted.show()
+
+   # fig.write_html(
+    #    file="{}/Diff Plot {} and {}.html".format(write_dir, pred_col, resp_col),
+     #   include_plotlyjs="cdn",
+    #)
 
 def cat_resp_cont_pred(data_set, pred_col, resp_col):
     # Fit linear regression model
@@ -303,9 +340,20 @@ def cat_resp_cont_pred(data_set, pred_col, resp_col):
 
     fig_2.show()
 
+    #fig.write_html(
+     #   file=f"{write_dir}/Diff Plot {pred_col} and {resp_col}.html",
+      #  include_plotlyjs="cdn",
+    #)
+
     print("Difference in means: {:.2f}".format(diff_means))
 
-def cont_resp_cat_pred(data_set, pred_col, resp_col):
+#combine_html(
+ #   optional=f"{write_dir}/Diff_plot_{pred_col}_and_{resp_col}.html",
+  #  one=f"{write_dir}/Unweighted_Diff_Table_of_{pred_col}.html",
+   #two=f"{write_dir}/Weighted_Diff_Table_of_{pred_col}.html",
+#)
+
+def cont_resp_cat_pred(data_set, pred_col, resp_col, write_dir):
     X = data_set[pred_col]
     y = data_set[resp_col]
 
@@ -445,6 +493,11 @@ def cont_resp_cat_pred(data_set, pred_col, resp_col):
     )
     fig_6.show()
 
+   # fig.write_html(
+    #    file="{}/Diff Plot {} and {}.html".format(write_dir, pred_col, resp_col),
+     #   include_plotlyjs="cdn",
+    #)
+
 
 # used the px.scatter() function from Plotly Express
 def cont_resp_cont_pred(data_set, pred_col, resp_col, weight_col=None):
@@ -509,7 +562,12 @@ def cont_resp_cont_pred(data_set, pred_col, resp_col, weight_col=None):
         )
         fig.show()
 
-def bool_resp_cont_pred(data_set, pred_col, resp_col):
+        #fig.write_html(
+         #   file="{}/Diff Plot {} and {}.html".format(write_dir, pred_col, resp_col),
+          #  include_plotlyjs="cdn",
+        #)
+
+def bool_resp_cont_pred(data_set, pred_col, resp_col, write_dir):
     # Fit logistic regression model
     X = data_set[[pred_col]]  # predictor variable
     y = data_set[resp_col]  # response variable
@@ -557,7 +615,7 @@ def bool_resp_cont_pred(data_set, pred_col, resp_col):
     )
     fig.show()
 
-def cont_resp_bool_pred(data_set, pred_col, resp_col):
+def cont_resp_bool_pred(data_set, pred_col, resp_col, write_dir):
     # Fit logistic regression model
     X = data_set[[pred_col]]  # predictor variable
     y = data_set[resp_col]  # response variable
@@ -635,6 +693,18 @@ def get_predictor_type(data_set, col):
         return "Continuous"
     else:
         return "Categorical"
+
+ #def make_clickable(val):
+        """Make urls in dataframe clickable for html output"""
+
+  #      if val is not None:
+   #         if "," in val:
+    #            x = val.split(",")
+     #           return f'{x[0]} <a target="_blank" href="{x[1]}">link to plot</a>'
+      #      else:
+       #         return f'<a target="_blank" href="{val}">link to plot</a>'
+        #else:
+         #   return val
 
 if __name__ == "__main__":
     main()
