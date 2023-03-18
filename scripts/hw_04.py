@@ -235,6 +235,18 @@ def cat_resp_cont_pred(data_set, pred_col, resp_col):
     print("p-value: {:.2f}".format(p_value))
     print("t-score: {:.2f}".format(t_score))
 
+    # Create random forest model
+    rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
+
+    # Fit random forest model
+    rf_model.fit(X, y)
+
+    # Get feature importances
+    importances = pd.DataFrame({"feature": X.columns, "importance": rf_model.feature_importances_})
+
+    # Print variable importance ranking
+    print(importances.sort_values(by="importance", ascending=False))
+
     # Create scatter plot with regression line
     fig = px.scatter(data_set, x=pred_col, y=resp_col, trendline="ols")
     fig.update_layout(
@@ -522,6 +534,18 @@ def cont_resp_cont_pred(data_set, pred_col, resp_col, weight_col=None):
     # Print p-value and t-score
     print("p-value: {:.2f}".format(p_value))
     print("t-score: {:.2f}".format(t_score))
+
+    # Create random forest model
+    rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
+
+    # Fit random forest model
+    rf_model.fit(X, y)
+
+    # Get feature importances
+    importances = pd.DataFrame({"feature": X.columns, "importance": rf_model.feature_importances_})
+
+    # Print variable importance ranking
+    print(importances.sort_values(by="importance", ascending=False))
 
     # Create scatter plot with regression line and mean line
     fig = px.scatter(data_set, x=pred_col, y=resp_col, trendline="ols")
