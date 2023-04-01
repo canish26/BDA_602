@@ -4,3 +4,7 @@ sklearn
 pandas
 seaborn
 scikit-learn
+statsmodels
+patsy
+File_path
+pingouin
