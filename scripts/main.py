@@ -1,14 +1,14 @@
 import os
-
 # import sys
+
+import path as p
 import numpy as np
 import pandas as pd
-import path as p
 import plotly.express as px
+from plots import Plots as mp
+from pred_resp_graphs import Plot_Graph as pg
 import statsmodels.api as sm
 from dataset_loader import Test_Dataset
-from plots import Plots as mp
-from pred_resp_graphs import PlotGraph as pg
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.preprocessing import LabelEncoder
 
@@ -152,7 +152,7 @@ def cat_cat_2d_morp(df_ip, x1, x2, y):
     return {
         "Weighted_morp": df["weighted_morp"].sum(),
         "Unweighted_morp": df["unweighted_morp"].sum()
-        / (df_ip[x1].nunique() * df_ip[x2].nunique()),
+                           / (df_ip[x1].nunique() * df_ip[x2].nunique()),
         "Plot_link": f"{path_2d_morp}/cat_{x1}_cat_{x2}_2D_morp.html",
     }
 
@@ -167,8 +167,8 @@ def cat_cont_2d_morp(df_ip, x1, x2, y):
 
     unweighted_morp = (df[y].mean() - df_grouped[y + "_mean"]) ** 2
     weighted_morp = (
-        df_grouped[y + "_size"] / df_grouped[y + "_size"].sum()
-    ) * unweighted_morp
+                            df_grouped[y + "_size"] / df_grouped[y + "_size"].sum()
+                    ) * unweighted_morp
     mean_size = df_grouped.apply(
         lambda row: f"{row[y + '_mean']:.6f} pop:{row[y + '_size']}", axis=1
     )
@@ -247,8 +247,8 @@ def pred_typ(data_set, pred_list):
     return {
         i: "Categorical"
         if type(data_set[i][0]) == str
-        or data_set[i].nunique() == 2
-        and not data_set[i].dtype.kind in "iufc"
+           or data_set[i].nunique() == 2
+           and not data_set[i].dtype.kind in "iufc"
         else "Continuous"
         for i in pred_list
     }
@@ -261,82 +261,87 @@ def url_click(url):
         else ""
     )
 
-    def main():
-        # get all available datasets
-        test_datasets = Test_Dataset()
-        available_datasets = test_datasets.get_all_available_datasets()
 
-        # select a dataset
-        selected_dataset = None
-        while selected_dataset not in available_datasets:
-            print("Please select one of the five datasets given below:")
-            print("\n".join(available_datasets))
-            selected_dataset = input().strip().lower()
-            if selected_dataset not in available_datasets:
-                print("Invalid dataset selected.")
+def main():
+    # get all available datasets
+    test_datasets = Test_Dataset()
+    available_datasets = test_datasets.get_all_available_datasets()
 
-        # load data for the selected dataset
-        df, predictors, response = test_datasets.get_test_data_set(
-            data_set_name=selected_dataset
-        )
+    # select a dataset
+    selected_dataset = None
+    while selected_dataset not in available_datasets:
+        print("Please select one of the five datasets given below:")
+        print("\n".join(available_datasets))
+        selected_dataset = input().strip().lower()
+        if selected_dataset not in available_datasets:
+            print("Invalid dataset selected.")
 
-        def analyze_continuous_predictors(df, response, predictors):
-            # Determine the type of response variable
-            n_unique = len(df[response].unique())
-            if n_unique > 2:
-                response_type = "Continuous"
-            elif n_unique == 2:
-                response_type = "Boolean"
-            else:
-                raise ValueError(
-                    f"The response variable '{response}' has {n_unique} unique values."
+    # load data for the selected dataset
+    df, predictors, response = test_datasets.get_test_data_set(
+        data_set_name=selected_dataset
+    )
+
+    def analyze_continuous_predictors(df, response, predictors):
+        # Determine the type of response variable
+        n_unique = len(df[response].unique())
+        if n_unique > 2:
+            response_type = "Continuous"
+        elif n_unique == 2:
+            response_type = "Boolean"
+        else:
+            raise ValueError(
+                f"The response variable '{response}' has {n_unique} unique values."
+            )
+
+        # Determine the type of each predictor variable and analyze continuous predictors
+        cont_fet_prop_list = []
+        for pred_name, pred_type in pred_typ(df, predictors).items():
+            if pred_type != "Continuous":
+                continue
+
+            # Perform analysis based on response type
+            if response_type == "Continuous":
+                # Perform continuous-response continuous-predictor analysis
+                dict1 = pg.cont_resp_cont_pred(df, pred_name, response)
+                dict2 = mp.morp_cont_resp_cont_pred(
+                    df, pred_name, "Continuous", response
                 )
-
-            # Determine the type of each predictor variable and analyze continuous predictors
-            cont_fet_prop_list = []
-            for pred_name, pred_type in pred_typ(df, predictors).items():
-                if pred_type != "Continuous":
-                    continue
-
-                # Perform analysis based on response type
-                if response_type == "Continuous":
-                    # Perform continuous-response continuous-predictor analysis
-                    dict1 = pg.cont_resp_cont_pred(df, pred_name, response)
-                    dict2 = mp.morp_cont_resp_cont_pred(
-                        df, pred_name, "Continuous", response
-                    )
-                    dict3 = linear_reg_plots(df[response], df[pred_name])
-                    plot_link2 = None
-                else:  # Boolean response
-                    # Perform boolean-response continuous-predictor analysis
-                    dict1 = pg.cat_resp_cont_pred(df, pred_name, response)
-                    dict2 = mp.morp_cat_resp_cont_pred(
-                        df, pred_name, "Continuous", response
-                    )
-                    dict3 = log_reg_plots(df[response], df[pred_name])
-                    plot_link2 = dict1["plot_link_2"]
-
-                # Add feature properties to the list
-                cont_fet_prop_list.append(
-                    {
-                        "Feature_nm": pred_name,
-                        "Plot_link1": dict1["plot_link_1"],
-                        "Plot_link2": plot_link2,
-                        "Weighted_morp": dict2["weighted_morp"],
-                        "Unweighted_morp": dict2["unweighted_morp"],
-                        "Morp_plot_link": dict2["Plot_link"],
-                        "P_value": dict3["P_value"],
-                        "T_value": dict3["T_value"],
-                    }
+                dict3 = linear_reg_plots(df[response], df[pred_name])
+                plot_link2 = None
+            else:  # Boolean response
+                # Perform boolean-response continuous-predictor analysis
+                dict1 = pg.cat_resp_cont_pred(df, pred_name, response)
+                dict2 = mp.morp_cat_resp_cont_pred(
+                    df, pred_name, "Continuous", response
                 )
+                dict3 = log_reg_plots(df[response], df[pred_name])
+                plot_link2 = dict1["plot_link_2"]
 
-            # Sort continuous predictor results by weighted MORP score
-            if cont_fet_prop_list:
-                cont_fet_prop_df = pd.DataFrame(cont_fet_prop_list)
-                cont_fet_prop_df = cont_fet_prop_df.sort_values(
-                    by="Weighted_morp", ascending=False
-                ).reset_index(drop=True)
-                return cont_fet_prop_df
-            else:
-                print("No continuous predictors found.")
-                return None
+            # Add feature properties to the list
+            cont_fet_prop_list.append(
+                {
+                    "Feature_nm": pred_name,
+                    "Plot_link1": dict1["plot_link_1"],
+                    "Plot_link2": plot_link2,
+                    "Weighted_morp": dict2["weighted_morp"],
+                    "Unweighted_morp": dict2["unweighted_morp"],
+                    "Morp_plot_link": dict2["Plot_link"],
+                    "P_value": dict3["P_value"],
+                    "T_value": dict3["T_value"],
+                }
+            )
+
+        # Sort continuous predictor results by weighted MORP score
+        if cont_fet_prop_list:
+            cont_fet_prop_df = pd.DataFrame(cont_fet_prop_list)
+            cont_fet_prop_df = cont_fet_prop_df.sort_values(
+                by="Weighted_morp", ascending=False
+            ).reset_index(drop=True)
+            return cont_fet_prop_df
+        else:
+            print("No continuous predictors found.")
+            return None
+
+
+if __name__ == "__main__":
+    main()
