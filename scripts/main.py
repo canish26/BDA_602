@@ -1,16 +1,16 @@
 import os
-# import sys
-
+import itertools
 import path as p
 import numpy as np
 import pandas as pd
 import plotly.express as px
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.preprocessing import LabelEncoder
 from plots import Plots as mp
 from pred_resp_graphs import Plot_Graph as pg
 import statsmodels.api as sm
+from correlation_plots import Correlation_Preds as pc
 from dataset_loader import Test_Dataset
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.preprocessing import LabelEncoder
 
 path = p.GLOBAL_PATH
 os.makedirs(path, exist_ok=True)
@@ -19,7 +19,7 @@ path_2d_morp = p.GLOBAL_PATH_2D_MORP
 os.makedirs(os.path.join(path_2d_morp), exist_ok=True)
 
 
-def rf_ranking_cont_resp(df, cont_var_pred_list, cat_var_pred_list, resp):
+def rf_rank_cont_resp(df, cont_var_pred_list, cat_var_pred_list, resp):
     x_cont = df[cont_var_pred_list]
     x_cat = df[cat_var_pred_list]
     y = df[resp]
@@ -39,7 +39,7 @@ def rf_ranking_cont_resp(df, cont_var_pred_list, cat_var_pred_list, resp):
         {
             "Column_name": df.columns,
             "Column_type": np.where(
-                df.columns.isin(x_cont.columns), "Continuous", "Categorical"
+                df.columns.isin(x_cont.columns), "Cont", "Cat"
             ),
             "fet_imp_coeff": rf.feature_importances_,
         }
@@ -50,7 +50,7 @@ def rf_ranking_cont_resp(df, cont_var_pred_list, cat_var_pred_list, resp):
     )
 
 
-def rf_ranking_cat_resp(df, cont_var_pred_list, cat_var_pred_list, resp):
+def rf_rank_cat_resp(df, cont_var_pred_list, cat_var_pred_list, resp):
     x_cont = df[cont_var_pred_list]
     x_cat = df[cat_var_pred_list]
     y = df[resp]
@@ -68,7 +68,7 @@ def rf_ranking_cat_resp(df, cont_var_pred_list, cat_var_pred_list, resp):
     rank_list = [
         {
             "Column_name": i,
-            "Column_type": "Continuous" if i in x_cont.columns else "Categorical",
+            "Column_type": "Cont" if i in x_cont.columns else "Cat",
             "fet_imp_coeff": j,
         }
         for i, j in zip(df, rf.feature_importances_)
@@ -80,7 +80,7 @@ def rf_ranking_cat_resp(df, cont_var_pred_list, cat_var_pred_list, resp):
     )
 
 
-def linear_reg_plots(y, x, fet_nm):
+def lin_reg_plots(y, x, fet_nm):
     x = sm.add_constant(x)
     model = sm.OLS(y, x).fit()
 
@@ -91,7 +91,7 @@ def linear_reg_plots(y, x, fet_nm):
 
     return {
         "Column_name": fet_nm,
-        "Column_type": "Continuous",
+        "Column_type": "Cont",
         "P_value": p_value,
         "T_value": t_value,
     }
@@ -111,7 +111,7 @@ def log_reg_plots(y, X, fet_nm):
 
     return {
         "Column_name": fet_nm,
-        "Column_type": "Continuous",
+        "Column_type": "Cont",
         "P_value": p_value,
         "T_value": t_value,
     }
@@ -121,8 +121,8 @@ def cat_cat_2d_morp(df_ip, x1, x2, y):
     df = df_ip.groupby([x1, x2])[y].agg(["mean", "size"]).reset_index()
     df.columns = [x1, x2, "mean", "size"]
 
-    df["unweighted_morp"] = (df[y]["mean"].mean() - df["mean"]) ** 2
-    df["weighted_morp"] = (df["size"] / df["size"].sum()) * df["unweighted_morp"]
+    df["unweigh_morp"] = (df[y]["mean"].mean() - df["mean"]) ** 2
+    df["weigh_morp"] = (df["size"] / df["size"].sum()) * df["unweigh_morp"]
 
     mean_size = df.apply(lambda row: f"{row['mean']:.6f} pop:{row['size']}", axis=1)
 
@@ -134,7 +134,7 @@ def cat_cat_2d_morp(df_ip, x1, x2, y):
         labels={
             "x": x2.replace("_bin", ""),
             "y": x1.replace("_bin", ""),
-            "color": "Correlation",
+            "color": "Corr",
         },
         title=f"{x2.replace('_bin', '')} vs {x1.replace('_bin', '')}",
     )
@@ -142,7 +142,7 @@ def cat_cat_2d_morp(df_ip, x1, x2, y):
     fig_heatmap.update_traces(
         text=mean_size.values,
         texttemplate="%{text}",
-        hovertemplate="%{x}<br>%{y}<br>Correlation: %{z:.6f}<br>Population: %{text}",
+        hovertemplate="%{x}<br>%{y}<br>Corr: %{z:.6f}<br>Population: %{text}",
     )
 
     fig_heatmap.write_html(
@@ -150,11 +150,30 @@ def cat_cat_2d_morp(df_ip, x1, x2, y):
     )
 
     return {
-        "Weighted_morp": df["weighted_morp"].sum(),
-        "Unweighted_morp": df["unweighted_morp"].sum()
-                           / (df_ip[x1].nunique() * df_ip[x2].nunique()),
+        "Weigh_morp": df["weigh_morp"].sum(),
+        "Unweigh_morp": df["unweigh_morp"].sum()
+                        / (df_ip[x1].nunique() * df_ip[x2].nunique()),
         "Plot_link": f"{path_2d_morp}/cat_{x1}_cat_{x2}_2D_morp.html",
     }
+
+
+def pred_typ(data_set, pred_list):
+    return {
+        i: "Cat"
+        if type(data_set[i][0]) == str
+           or data_set[i].nunique() == 2
+           and not data_set[i].dtype.kind in "iufc"
+        else "Cont"
+        for i in pred_list
+    }
+
+
+def url_click(url):
+    return (
+        f'<a target="_blank" href="{url.split(",")[1] if "," in url else url}">plots link</a>'
+        if url
+        else ""
+    )
 
 
 def cat_cont_2d_morp(df_ip, x1, x2, y):
@@ -177,7 +196,7 @@ def cat_cont_2d_morp(df_ip, x1, x2, y):
         df_grouped.pivot(x1, x2_bin, y + "_mean"),
         color_continuous_scale="YlGnBu",
         labels=dict(
-            x=x1.replace("_bin", ""), y=x2.replace("_bin", ""), color="Correlation"
+            x=x1.replace("_bin", ""), y=x2.replace("_bin", ""), color="Corr"
         ),
         title=f"{x2.replace('_bin', '')} vs {x1.replace('_bin', '')}",
     )
@@ -188,8 +207,8 @@ def cat_cont_2d_morp(df_ip, x1, x2, y):
     )
 
     return {
-        "Weighted_morp": weighted_morp.sum(),
-        "Unweighted_morp": unweighted_morp.sum() / len(df_grouped),
+        "Weigh_morp": weighted_morp.sum(),
+        "Unweigh_morp": unweighted_morp.sum() / len(df_grouped),
         "Plot_link": f"{path_2d_morp}/cat_{x1}_cont_{x2_bin}_2D_morp.html",
     }
 
@@ -206,9 +225,9 @@ def cont_cont_2d_morp(df_ip, x1, x2, y):
 
     # Calculate unweighted and weighted morp
     y_mean = df[y + "mean"]
-    df["unweighted_morp"] = (df_ip[y].mean() - y_mean) ** 2
-    df["weighted_morp"] = (df[y + "size"] / df[y + "size"].sum()) * df[
-        "unweighted_morp"
+    df["unweigh_morp"] = (df_ip[y].mean() - y_mean) ** 2
+    df["weigh_morp"] = (df[y + "size"] / df[y + "size"].sum()) * df[
+        "unweigh_morp"
     ]
 
     # Create mean_size column
@@ -237,110 +256,192 @@ def cont_cont_2d_morp(df_ip, x1, x2, y):
 
     # Return morp values and plot link
     return {
-        "Weighted_morp": df["weighted_morp"].sum(),
-        "Unweighted_morp": df["unweighted_morp"].sum() / len(df),
+        "Weigh_morp": df["weigh_morp"].sum(),
+        "Unweigh_morp": df["unweigh_morp"].sum() / len(df),
         "Plot_link": file_name,
     }
 
 
-def pred_typ(data_set, pred_list):
-    return {
-        i: "Categorical"
-        if type(data_set[i][0]) == str
-           or data_set[i].nunique() == 2
-           and not data_set[i].dtype.kind in "iufc"
-        else "Continuous"
-        for i in pred_list
-    }
-
-
-def url_click(url):
-    return (
-        f'<a target="_blank" href="{url.split(",")[1] if "," in url else url}">plots link</a>'
-        if url
-        else ""
-    )
-
-
 def main():
-    # get all available datasets
+    df_dict = {}
     test_datasets = Test_Dataset()
-    available_datasets = test_datasets.get_all_available_datasets()
+    for test in test_datasets.get_all_available_datasets():
+        df, predictors, response = test_datasets.get_test_data_set(data_set_name=test)
+        df_dict[test] = [df, predictors, response]
 
-    # select a dataset
-    selected_dataset = None
-    while selected_dataset not in available_datasets:
-        print("Please select one of the five datasets given below:")
-        print("\n".join(available_datasets))
-        selected_dataset = input().strip().lower()
-        if selected_dataset not in available_datasets:
-            print("Invalid dataset selected.")
-
-    # load data for the selected dataset
-    df, predictors, response = test_datasets.get_test_data_set(
-        data_set_name=selected_dataset
-    )
-
-    def analyze_continuous_predictors(df, response, predictors):
-        # Determine the type of response variable
-        n_unique = len(df[response].unique())
-        if n_unique > 2:
-            response_type = "Continuous"
-        elif n_unique == 2:
-            response_type = "Boolean"
+    flag = True
+    available_datasets = ["mpg", "tips", "titanic", "diabetes", "breast_cancer"]
+    while flag:
+        print("select one of the 5 datasets following:")
+        print('\n'.join(available_datasets))
+        data_set_nm = input().strip().lower()
+        if data_set_nm in available_datasets:
+            flag = False
         else:
-            raise ValueError(
-                f"The response variable '{response}' has {n_unique} unique values."
-            )
+            print("Not selected one of the above datasets")
 
-        # Determine the type of each predictor variable and analyze continuous predictors
-        cont_fet_prop_list = []
-        for pred_name, pred_type in pred_typ(df, predictors).items():
-            if pred_type != "Continuous":
-                continue
+    print("I have selected,", data_set_nm)
 
-            # Perform analysis based on response type
-            if response_type == "Continuous":
-                # Perform continuous-response continuous-predictor analysis
-                dict1 = pg.cont_resp_cont_pred(df, pred_name, response)
-                dict2 = mp.morp_cont_resp_cont_pred(
-                    df, pred_name, "Continuous", response
-                )
-                dict3 = linear_reg_plots(df[response], df[pred_name])
-                plot_link2 = None
-            else:  # Boolean response
-                # Perform boolean-response continuous-predictor analysis
-                dict1 = pg.cat_resp_cont_pred(df, pred_name, response)
-                dict2 = mp.morp_cat_resp_cont_pred(
-                    df, pred_name, "Continuous", response
-                )
-                dict3 = log_reg_plots(df[response], df[pred_name])
-                plot_link2 = dict1["plot_link_2"]
+    data_set, predictors, response = df_dict[data_set_nm]
 
-            # Add feature properties to the list
-            cont_fet_prop_list.append(
-                {
-                    "Feature_nm": pred_name,
-                    "Plot_link1": dict1["plot_link_1"],
-                    "Plot_link2": plot_link2,
-                    "Weighted_morp": dict2["weighted_morp"],
-                    "Unweighted_morp": dict2["unweighted_morp"],
-                    "Morp_plot_link": dict2["Plot_link"],
-                    "P_value": dict3["P_value"],
-                    "T_value": dict3["T_value"],
-                }
-            )
+    # Determine response variable type
+    if len(data_set[response].value_counts()) > 2:
+        resp_type = "Cont"
+    elif len(data_set[response].value_counts()) == 2:
+        resp_type = "Bool"
+    else:
+        print("How many categories does response var got??")
 
-        # Sort continuous predictor results by weighted MORP score
-        if cont_fet_prop_list:
-            cont_fet_prop_df = pd.DataFrame(cont_fet_prop_list)
-            cont_fet_prop_df = cont_fet_prop_df.sort_values(
-                by="Weighted_morp", ascending=False
-            ).reset_index(drop=True)
-            return cont_fet_prop_df
+    # Determine predictor variable types
+    pred_dict = pred_typ(data_set, predictors)
+    cat_pred_list = [i for i in pred_dict if pred_dict[i] == "Categorical"]
+    cont_pred_list = [i for i in pred_dict if pred_dict[i] == "Continuous"]
+
+    # Process continuous predictor variables
+    cont_fet_prop_list = []
+    for i in cont_pred_list:
+        if resp_type == "Cont":
+            dict1 = pg.cont_resp_cont_pred(data_set, i, response)
+            dict2 = mp.morp_cont_resp_cont_pred(data_set, i, "Cont", response)
+            dict3 = lin_reg_plots(data_set[response], data_set[i], i)
+            plot_link2 = None
         else:
-            print("No continuous predictors found.")
-            return None
+            dict1 = pg.cat_resp_cont_pred(data_set, i, response)
+            dict2 = mp.morp_cat_resp_cont_pred(data_set, i, "Cont", response)
+            dict3 = log_reg_plots(data_set[response], data_set[i], i)
+            plot_link2 = dict1["plot_link_2"]
+
+        cont_fet_prop_list.append({
+            "Feature_nm": i,
+            "Plot_link1": dict1["plot_link_1"],
+            "Plot_link2": plot_link2,
+            "Weigh_morp": dict2["weigh_morp"],
+            "Unweigh_morp": dict2["unweigh_morp"],
+            "Morp_plot_link": dict2["Plot_link"],
+            "P_value": dict3["P_value"],
+            "T_value": dict3["T_value"],
+        })
+
+    cont_fet_prop_df = pd.DataFrame(cont_fet_prop_list).sort_values(
+        by="Weigh_morp", ascending=False
+    ).reset_index(drop=True)
+
+    # Process categorical predictor variables
+    cat_fet_prop_list = []
+    for i in cat_pred_list:
+        if resp_type == "Cont":
+            dict1 = pg.cont_resp_cat_pred(data_set, i, response)
+            dict2 = mp.morp_cont_resp_cat_pred(data_set, i, "Cont", response)
+        else:
+            dict1 = pg.cat_resp_cat_pred(data_set, i, response)
+            dict2 = mp.morp_cat_resp
+
+    # cont_cont_correlation
+    cont_cont_list = []
+    for a, b in itertools.combinations(cont_pred_list, 2):
+        cont_cont_dict = {
+            "Cont_a": a,
+            "Cont_b": b,
+            "Corr": pc.cont_pred_corr(data_set[a], data_set[b]),
+            "Cont_a_morp_url": mp.morp_cont_resp_cont_pred(
+                data_set, a, "Cont", response
+            )["Plot_link"] if resp_type == "Cont" else mp.morp_cat_resp_cont_pred(
+                data_set, a, "Cont", response
+            )["Plot_link"],
+            "Cont_b_morp_url": mp.morp_cont_resp_cont_pred(
+                data_set, b, "Cont", response
+            )["Plot_link"] if resp_type == "Cont" else mp.morp_cat_resp_cont_pred(
+                data_set, b, "Cont", response
+            )["Plot_link"],
+        }
+        cont_cont_list.append(cont_cont_dict)
+
+    if cont_cont_list:
+        cont_cont_corr_df = pd.DataFrame(cont_cont_list)
+        cont_cont_corr_html_plt = pc.corr_heatmap_plots(
+            cont_cont_corr_df, "Cont_a", "Cont_b", "Corr"
+        )
+        cont_cont_corr_df = cont_cont_corr_df.sort_values(
+            by="Corr", ascending=False
+        ).reset_index(drop=True)
+        cont_cont_corr_df = cont_cont_corr_df[
+            cont_cont_corr_df["Cont_a"] != cont_cont_corr_df["Cont_b"]
+            ]
+    else:
+        cont_cont_corr_df = pd.DataFrame()
+
+        # cat_cat_correlation
+        cat_cat_list_t = [
+            {
+                "Cat_a": a,
+                "Cat_b": b,
+                "Corr_V": pc.cat_correlation(data_set[a], data_set[b]),
+                "Cat_a_morp_url": mp.morp_cont_resp_cat_pred(data_set, a, "Cat", response)["Plot_link"],
+                "Cat_b_morp_url": mp.morp_cont_resp_cat_pred(data_set, b, "Cat", response)["Plot_link"],
+            } if resp_type == "Continuous" else {
+                "Cat_a": a,
+                "Cat_b": b,
+                "Corr_V": pc.cat_correlation(data_set[a], data_set[b]),
+                "Cat_a_morp_url": mp.morp_cat_resp_cat_pred(data_set, a, "Cat", response)["Plot_link"],
+                "Cat_b_morp_url": mp.morp_cat_resp_cat_pred(data_set, b, "Cat", response)["Plot_link"],
+            }
+            for a in cat_pred_list
+            for b in cat_pred_list
+        ]
+
+        cat_cat_list_t = [d for d in cat_cat_list_t if d["Cat_a"] != d["Cat_b"]]
+
+        cat_cat_list_v = [
+            {
+                "Cat_1": a,
+                "Cat_2": b,
+                "Corr_T": pc.cat_correlation(data_set[a], data_set[b], tschuprow=True),
+                "Cat_a_morp_url": mp.morp_cont_resp_cat_pred(data_set, a, "Cat", response)["Plot_link"],
+                "Cat_b_morp_url": mp.morp_cont_resp_cat_pred(data_set, b, "Cat", response)["Plot_link"],
+            } if resp_type == "Continuous" else {
+                "Cat_a": a,
+                "Cat_b": b,
+                "Corr_T": pc.cat_correlation(data_set[a], data_set[b], tschuprow=True),
+                "Cat_a_morp_url": mp.morp_cat_resp_cat_pred(data_set, a, "Cat", response)["Plot_link"],
+                "Cat_b_morp_url": mp.morp_cat_resp_cat_pred(data_set, b, "Cat", response)["Plot_link"],
+            }
+            for a in cat_pred_list
+            for b in cat_pred_list
+        ]
+
+        cat_cat_list_v = [d for d in cat_cat_list_v if d["Cat_a"] != d["Cat_b"]]
+
+        cat_cat_corr_t_df = pd.DataFrame(cat_cat_list_t)
+        cat_cat_corr_v_df = pd.DataFrame(cat_cat_list_v)
+
+        cat_cat_corr_t_df = cat_cat_corr_t_df.sort_values(by="Corr_T", ascending=False).reset_index(drop=True)
+        cat_cat_corr_v_df = cat_cat_corr_v_df.sort_values(by="Corr_V", ascending=False).reset_index(drop=True)
+
+        cat_cat_corr_t_html_plt = pc.corr_heatmap_plots(cat_cat_corr_t_df, "Cat_a", "Cat_a", "Correlation_T")
+        cat_cat_corr_v_html_plt = pc.corr_heatmap_plots(cat_cat_corr_v_df, "Cat_b", "Cat_b", "Correlation_V")
+
+        # cat_cont correlation
+
+        cat_cont_list = [(a, b, pc.cat_cont_correlation_ratio(data_set[a], data_set[b]),
+                          mp.morp_cont_resp_cat_pred(data_set, a, "Cat", response)[
+                              "Plot_link"] if resp_type == "Cont" else
+                          mp.morp_cat_resp_cat_pred(data_set, a, "Cat", response)["Plot_link"],
+                          mp.morp_cont_resp_cont_pred(data_set, b, "Cont", response)[
+                              "Plot_link"] if resp_type == "Cont" else
+                          mp.morp_cat_resp_cont_pred(data_set, b, "Cont", response)["Plot_link"]
+                          )
+                         for a in cat_pred_list
+                         for b in cont_pred_list
+                         ]
+
+        if len(cat_cont_list) >= 1:
+            cat_cont_corr_df = pd.DataFrame(cat_cont_list,
+                                            columns=["Cat", "Cont", "Corr", "Cat_morp_url", "Cont_morp_url"])
+            cat_cont_corr_df = cat_cont_corr_df.sort_values(by="Correlation", ascending=False).reset_index(drop=True)
+            cat_cont_corr_html_plt = pc.corr_heatmap_plots(cat_cont_corr_df, "Cont", "Cat", "Corr")
+            cat_cont_corr_df = cat_cont_corr_df[cat_cont_corr_df["Cont"] != cat_cont_corr_df["Cat"]]
+        else:
+            cat_cont_corr_df = pd.DataFrame(cat_cont_list)
 
 
 if __name__ == "__main__":
