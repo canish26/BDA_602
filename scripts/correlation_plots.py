@@ -1,27 +1,28 @@
 import numpy as np
 import pandas as pd
-
-# from scipy.stats import pearsonr
+import warnings
+from scipy import stats
 import plotly.express as px
 from scipy.stats import chi2_contingency
 from sklearn.preprocessing import LabelEncoder
 
 
 class Correlation_Preds:
+    @staticmethod
     def fill_na(data):
-        return (
-            pd.Series(data).fillna(0).values
-            if isinstance(data, pd.Series)
-            else np.nan_to_num(data, nan=0)
-        )
+        if isinstance(data, pd.Series):
+            return data.fillna(0).values
+        else:
+            return np.nan_to_num(data)
 
+    @staticmethod
     def cont_pred_corr(df1, df2):
-        return np.corrcoef(df1.fill_na(df1), df1.fill_na(df2))[0, 1]
+        return np.nan_to_num(np.corrcoef(df1, df2)[0, 1])
 
 
 class correlation_ratio:
     @staticmethod
-    def cat_correlation(x, y, measure="pmi"):
+    def cat_cont_corr(x, y, measure="pmi"):
         """
         Calculates correlation statistic for categorical-categorical association using either PMI or chi2 measures.
 
@@ -69,7 +70,36 @@ class correlation_ratio:
             )
 
 
-def corr_heatmap_plot(df, pred_col_1, pred_col_2, value_col):
+def cat_corr(x, y, bias_correction=True, tschuprow=False):
+    try:
+        x, y = Correlation_Preds.fill_na(x), Correlation_Preds.fill_na(y)
+        crosstab_matrix = pd.crosstab(x, y)
+        chi2, _, _, _ = stats.chi2_contingency(crosstab_matrix, correction=crosstab_matrix.shape != (2, 2))
+        phi2 = chi2 / crosstab_matrix.sum().sum()
+
+        r, c = crosstab_matrix.shape
+        n_observations = crosstab_matrix.sum().sum()
+        r_corrected, c_corrected = r - ((r - 1) ** 2) / (n_observations - 1), c - ((c - 1) ** 2) / (n_observations - 1)
+
+        if bias_correction:
+            phi2_corrected = max(0, phi2 - ((r - 1) * (c - 1)) / (n_observations - 1))
+            denominator = np.sqrt((r_corrected - 1) * (c_corrected - 1))
+        else:
+            phi2_corrected, denominator = phi2, min((r_corrected - 1), (c_corrected - 1))
+
+        corr_coeff = np.sqrt(np.nan_to_num(phi2_corrected / denominator))
+        if tschuprow:
+            corr_coeff = np.sqrt(np.nan_to_num(phi2_corrected / np.sqrt(denominator)))
+
+        return corr_coeff
+    except Exception as ex:
+        print(ex)
+        warnings.warn("Calculating error Tschuprow's T" if tschuprow else "Calculating error Cramer's V",
+                      RuntimeWarning)
+        return np.nan
+
+
+def heatmap_plot_corr(df, pred_col_1, pred_col_2, value_col):
     fig_heatmap = px.imshow(
         df.corr()[[pred_col_1, pred_col_2]].loc[[pred_col_1, pred_col_2]].values,
         x=[pred_col_1, pred_col_2],
