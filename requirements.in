@@ -8,3 +8,6 @@ statsmodels
 patsy
 File_path
 pingouin
+itertools
+jinja2
+sys
