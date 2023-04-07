@@ -268,7 +268,7 @@ def main():
     df_dict = {}
     test_datasets = Test_Dataset()
     for test in test_datasets.get_all_available_datasets():
-        df, predictors, response = test_datasets.get_test_data_set(data_set_name=test)
+        df, predictors, response = test_datasets.get_test_dataset(data_set_name=test)
         df_dict[test] = [df, predictors, response]
     flag = True
     while flag:
