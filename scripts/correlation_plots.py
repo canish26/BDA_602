@@ -19,8 +19,6 @@ class Correlation_Preds:
     def cont_pred_corr(df1, df2):
         return np.nan_to_num(np.corrcoef(df1, df2)[0, 1])
 
-
-class correlation_ratio:
     @staticmethod
     def cat_cont_corr(x, y, measure="pmi"):
         """
@@ -69,46 +67,53 @@ class correlation_ratio:
                 "Invalid measure parameter. Possible values: 'pmi', 'chi2'"
             )
 
+    @staticmethod
+    def cat_corr(x, y, bias_correction=True, tschuprow=False):
+        try:
+            x, y = Correlation_Preds.fill_na(x), Correlation_Preds.fill_na(y)
+            crosstab_matrix = pd.crosstab(x, y)
+            chi2, _, _, _ = stats.chi2_contingency(crosstab_matrix, correction=crosstab_matrix.shape != (2, 2))
+            phi2 = chi2 / crosstab_matrix.sum().sum()
 
-def cat_corr(x, y, bias_correction=True, tschuprow=False):
-    try:
-        x, y = Correlation_Preds.fill_na(x), Correlation_Preds.fill_na(y)
-        crosstab_matrix = pd.crosstab(x, y)
-        chi2, _, _, _ = stats.chi2_contingency(crosstab_matrix, correction=crosstab_matrix.shape != (2, 2))
-        phi2 = chi2 / crosstab_matrix.sum().sum()
+            r, c = crosstab_matrix.shape
+            n_observations = crosstab_matrix.sum().sum()
+            r_corrected, c_corrected = r - ((r - 1) ** 2) / (n_observations - 1), c - ((c - 1) ** 2) / (
+                        n_observations - 1)
 
-        r, c = crosstab_matrix.shape
-        n_observations = crosstab_matrix.sum().sum()
-        r_corrected, c_corrected = r - ((r - 1) ** 2) / (n_observations - 1), c - ((c - 1) ** 2) / (n_observations - 1)
+            if bias_correction:
+                phi2_corrected = max(0, phi2 - ((r - 1) * (c - 1)) / (n_observations - 1))
+                denominator = np.sqrt((r_corrected - 1) * (c_corrected - 1))
+            else:
+                phi2_corrected, denominator = phi2, min((r_corrected - 1), (c_corrected - 1))
 
-        if bias_correction:
-            phi2_corrected = max(0, phi2 - ((r - 1) * (c - 1)) / (n_observations - 1))
-            denominator = np.sqrt((r_corrected - 1) * (c_corrected - 1))
-        else:
-            phi2_corrected, denominator = phi2, min((r_corrected - 1), (c_corrected - 1))
+            corr_coeff = np.sqrt(np.nan_to_num(phi2_corrected / denominator))
+            if tschuprow:
+                corr_coeff = np.sqrt(np.nan_to_num(phi2_corrected / np.sqrt(denominator)))
 
-        corr_coeff = np.sqrt(np.nan_to_num(phi2_corrected / denominator))
-        if tschuprow:
-            corr_coeff = np.sqrt(np.nan_to_num(phi2_corrected / np.sqrt(denominator)))
+            return corr_coeff
+        except Exception as ex:
+            print(ex)
+            warnings.warn("Calculating error Tschuprow's T" if tschuprow else "Calculating error Cramer's V",
+                          RuntimeWarning)
+            return np.nan
 
-        return corr_coeff
-    except Exception as ex:
-        print(ex)
-        warnings.warn("Calculating error Tschuprow's T" if tschuprow else "Calculating error Cramer's V",
-                      RuntimeWarning)
-        return np.nan
+    @staticmethod
+    def heatmap_plot_corr(df, pred_col_1, pred_col_2, value_col):
+        fig_heatmap = px.imshow(
+            df.corr()[[pred_col_1, pred_col_2]].loc[[pred_col_1, pred_col_2]].values,
+            x=[pred_col_1, pred_col_2],
+            y=[pred_col_1, pred_col_2],
+            color_continuous_scale="YlOrRd",
+            zmin=-1,
+            zmax=1,
+            labels=dict(color=value_col),
+        )
+
+        fig_heatmap.update_layout(title="Correlation Heatmap")
+        return fig_heatmap.show()
 
 
-def heatmap_plot_corr(df, pred_col_1, pred_col_2, value_col):
-    fig_heatmap = px.imshow(
-        df.corr()[[pred_col_1, pred_col_2]].loc[[pred_col_1, pred_col_2]].values,
-        x=[pred_col_1, pred_col_2],
-        y=[pred_col_1, pred_col_2],
-        color_continuous_scale="YlOrRd",
-        zmin=-1,
-        zmax=1,
-        labels=dict(color=value_col),
-    )
 
-    fig_heatmap.update_layout(title="Correlation Heatmap")
-    return fig_heatmap.show()
+
+
+
