@@ -291,7 +291,7 @@ def main():
     if data_set[response].nunique() > 2:
         resp_type = "Cont"
 
-    elif data_set[response].nunique() == 2: \
+    elif data_set[response].nunique() == 2:
         resp_type = "Bool"
     else:
         print("How many categories does the response variable have?")
