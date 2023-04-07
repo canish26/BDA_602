@@ -472,7 +472,7 @@ def main():
                                                       on=['Cat_1', 'Cat_2', 'Cat_1_morp_url', 'Cat_2_morp_url'])
         cat_cat_2d_morp_df['Correlation_T_Abs'] = cat_cat_2d_morp_df['Correlation_T'].abs()
         cat_cat_2d_morp_df['Correlation_V_Abs'] = cat_cat_2d_morp_df['Correlation_V'].abs()
-        xcat_cat_2d_morp_df = cat_cat_2d_morp_df.sort_values('Weighted_morp', ascending=False).reset_index(drop=True)
+        cat_cat_2d_morp_df = cat_cat_2d_morp_df.sort_values('Weighted_morp', ascending=False).reset_index(drop=True)
     else:
         cat_cat_2d_morp_df = pd.DataFrame([])
 
