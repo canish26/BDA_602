@@ -159,25 +159,6 @@ def cat_cat_2d_morp(df_ip, x1, x2, y):
     }
 
 
-def pred_typ(data_set, pred_list):
-    return {
-        i: "Cat"
-        if type(data_set[i][0]) == str
-           or data_set[i].nunique() == 2
-           and not data_set[i].dtype.kind in "iufc"
-        else "Cont"
-        for i in pred_list
-    }
-
-
-def url_click(url):
-    return (
-        f'<a target="_blank" href="{url.split(",")[1] if "," in url else url}">plots link</a>'
-        if url
-        else ""
-    )
-
-
 def cat_cont_2d_morp(df_ip, x1, x2, y):
     df = df_ip.copy()
     x2_bin = x2 + "_bin"
@@ -262,6 +243,25 @@ def cont_cont_2d_morp(df_ip, x1, x2, y):
         "Unweigh_morp": df["unweigh_morp"].sum() / len(df),
         "Plot_link": file_name,
     }
+
+
+def pred_typ(data_set, pred_list):
+    return {
+        i: "Cat"
+        if type(data_set[i][0]) == str
+           or data_set[i].nunique() == 2
+           and not data_set[i].dtype.kind in "iufc"
+        else "Cont"
+        for i in pred_list
+    }
+
+
+def url_click(url):
+    return (
+        f'<a target="_blank" href="{url.split(",")[1] if "," in url else url}">plots link</a>'
+        if url
+        else ""
+    )
 
 
 def main():
@@ -558,7 +558,7 @@ def main():
         .set_table_styles(table_styles)
     )
 
-    #corr_dfs_clickable
+    # corr_dfs_clickable
     # making corr dfs clickable
     cont_cont_corr_df = cont_cont_corr_df.style.format({"Cont_1_morp_url": url_click, "Cont_2_morp_url": url_click}) \
         .set_table_styles(table_styles) \
@@ -599,48 +599,50 @@ def main():
             }
         ).set_table_styles(table_styles)
 
+        # write html page using f-strings and multi-line strings
+
         with open("data.html", "w") as out:
-            out.write("<h5>Continuous Predictors Properties</h5>")
-            out.write(cont_fet_prop_df.to_html())
-            out.write("<br><br>")
-            out.write("<h5>Categorical Predictors Properties</h5>")
-            out.write(cat_fet_prop_df.to_html())
-            out.write("<h5>Categorical/ Categorical Correlation</h5>")
-            out.write("<br><br>")
-            out.write("<h4>Correlation Tschuprow Matrix Heatmap</h4>")
-            out.write(cat_cat_corr_t_html_plt)
-            out.write("<br><br>")
-            out.write("<h4>Correlation Cramer's Matrix Heatmap</h4>")
-            out.write(cat_cat_corr_v_html_plt)
-            out.write("<br><br>")
-            out.write("<h4>Correlation Tschuprow Matrix</h4>")
-            out.write(cat_cat_corr_t_df.to_html())
-            out.write("<br><br>")
-            out.write("<h4>Correlation Cramer's Matrix</h4>")
-            out.write(cat_cat_corr_v_df.to_html())
-            out.write("<br><br>")
-            out.write("<h5>Categorical/ Continuous Correlation</h5>")
-            out.write(cat_cont_corr_html_plt)
-            out.write("<br><br>")
-            out.write("<h4>Categorical/ Continuous Correlation Matrix</h4>")
-            out.write(cat_cont_corr_df.to_html())
-            out.write("<br><br>")
-            out.write("<h5>Continuous/ Continuous Correlation</h5>")
-            out.write(cont_cont_corr_html_plt)
-            out.write("<br><br>")
-            out.write("<h4>Continuous/ Continuous Correlation Matrix</h4>")
-            out.write(cont_cont_corr_df.to_html())
-            out.write("<br><br>")
-            out.write("<h4>Categorical Categorical Brute force combination</h4>")
-            out.write(cat_cat_2d_morp_df.to_html())
-            out.write("<br><br>")
-            out.write("<h4>Categorical Continuous Brute force combination</h4>")
-            out.write(cat_cont_2d_morp_df.to_html())
-            out.write("<br><br>")
-            out.write("<h4>Continuous Continuous Brute force combination</h4>")
-            out.write(cont_cont_2d_morp_df.to_html())
+            out.write(f"""
+                <h5>Continuous Predictors Properties</h5>
+                {cont_fet_prop_df.to_html()}
+                <br><br>
+                <h5>Categorical Predictors Properties</h5>
+                {cat_fet_prop_df.to_html()}
+                <h5>Categorical/ Categorical Correlation</h5>
+                <br><br>
+                <h4>Correlation Tschuprow Matrix Heatmap</h4>
+                {cat_cat_corr_t_html_plt}
+                <br><br>
+                <h4>Correlation Cramer's Matrix Heatmap</h4>
+                {cat_cat_corr_v_html_plt}
+                <br><br>
+                <h4>Correlation Tschuprow Matrix</h4>
+                {cat_cat_corr_t_df.to_html()}
+                <br><br>
+                <h4>Correlation Cramer's Matrix</h4>
+                {cat_cat_corr_v_df.to_html()}
+                <br><br>
+                <h5>Categorical/ Continuous Correlation</h5>
+                {cat_cont_corr_html_plt}
+                <br><br>
+                <h4>Categorical/ Continuous Correlation Matrix</h4>
+                {cat_cont_corr_df.to_html()}
+                <br><br>
+                <h5>Continuous/ Continuous Correlation</h5>
+                {cont_cont_corr_html_plt}
+                <br><br>
+                <h4>Continuous/ Continuous Correlation Matrix</h4>
+                {cont_cont_corr_df.to_html()}
+                <br><br>
+                <h4>Categorical Categorical Brute force combination</h4>
+                {cat_cat_2d_morp_df.to_html()}
+                <br><br>
+                <h4>Categorical Continuous Brute force combination</h4>
+                {cat_cont_2d_morp_df.to_html()}
+                <br><br>
+                <h4>Continuous Continuous Brute force combination</h4>
+                {cont_cont_2d_morp_df.to_html()}
+            """)
 
     if __name__ == "__main__":
         sys.exit(main())
-
-
