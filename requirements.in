@@ -1,4 +1,5 @@
 numpy
+pyspark
 plotly
 sklearn
 pandas
@@ -8,3 +9,6 @@ statsmodels
 patsy
 File_path
 pingouin
+itertools
+jinja2
+sys
