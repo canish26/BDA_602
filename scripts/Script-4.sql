@@ -128,6 +128,22 @@ ORDER BY game_id, pitcher;
 ALTER TABLE home_start_pitch ADD PRIMARY KEY (game_id, pitcher);
 ALTER TABLE away_start_pitch ADD PRIMARY KEY (game_id, pitcher);
 
+CREATE TEMPORARY TABLE bat_hist_team ENGINE=MEMORY AS (
+    SELECT 
+        ctb.game_id, 
+        DATE(g.local_date) AS game_date, 
+        ctb.team_id, 
+        ctb.homeTeam, 
+        IF(SUM(ctb.atBat)=0, 0, SUM(ctb.Hit)/SUM(ctb.atBat)) AS AVG, 
+        IF(SUM(ctb.atBat-ctb.Strikeout-ctb.Home_Run+ctb.Sac_Fly)=0, 0, SUM(ctb.Hit-ctb.Home_Run)/SUM(ctb.atBat-ctb.Strikeout-ctb.Home_Run+ctb.Sac_Fly)) AS BABIP, 
+        IF(SUM(ctb.atBat+ctb.Walk+ctb.Hit_By_Pitch+ctb.Sac_Fly)=0, 0, SUM(ctb.Hit+ctb.BB+ctb.Hit_By_Pitch)/SUM(ctb.atBat+ctb.Walk+ctb.Hit_By_Pitch+ctb.Sac_Fly)) AS OBP, 
+        IF(SUM(ctb.atBat)=0, 0, SUM(ctb.Single+(2*ctb.Double)+(3*ctb.Triple)+(4*ctb.Home_Run))/SUM(ctb.atBat)) AS SLG, 
+        IF(SUM(ctb.atBat)*SUM(ctb.atBat+ctb.Walk+ctb.Hit_By_Pitch+ctb.Sac_Fly)=0, 0, SUM(ctb.Hit+ctb.BB+ctb.Hit_By_Pitch)/SUM(ctb.atBat+ctb.Walk+ctb.Hit_By_Pitch+ctb.Sac_Fly) + SUM(ctb.Single+(2*ctb.Double)+(3*ctb.Triple)+(4*ctb.Home_Run))/SUM(ctb.atBat)) AS OPS 
+    FROM game g 
+    JOIN count_team_bat ctb ON g.game_id = ctb.game_id 
+    GROUP BY ctb.game_id, ctb.team_id 
+    ORDER BY ctb.game_id, ctb.team_id
+);
 
 CREATE TEMPORARY TABLE IF NOT EXISTS feature_data AS
 (
