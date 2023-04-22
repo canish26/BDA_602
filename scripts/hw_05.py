@@ -33,16 +33,12 @@ def load_data(sparksession, query):
 
 def main():
     sparksession = SparkSession.builder.master("local[*]").getOrCreate()
-    game_sql = "SELECT * FROM game"
-    battercounts_sql = "SELECT * FROM batter_counts"
-    game = load_data(sparksession, game_sql)
-    game.createOrReplaceTempView("game")
-    game.persist(StorageLevel.MEMORY_ONLY)
-    batter_count = load_data(sparksession, battercounts_sql)
-    batter_count.createOrReplaceTempView("batter_counts")
-    batter_count.persist(StorageLevel.MEMORY_ONLY)
+    query_sql = "SELECT * FROM feature_data"
+    features_data = load_data(sparksession, query_sql)
+    features_data.createOrReplaceTempView("game")
+    features_data.persist(StorageLevel.MEMORY_ONLY)
     # df_temp_table = sparksession.sql(""" """)
-    sparksession.sql("""SELECT * FROM temp_roll_avg""").show()
+    sparksession.sql("""SELECT * FROM feature_data""").show()
 
 
 if __name__ == "__main__":
