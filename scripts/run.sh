@@ -3,13 +3,12 @@ set -e
 
 if [[ -z "$(mysql -h localhost -u root -pCsridhar2601@ -e 'SHOW DATABASES LIKE "baseball"')" ]]; then
     echo "Creating baseball database"
-    mysql -h localhost -u root -pCsridhar2601@ -e "CREATE DATABASE baseball"
-    tar -xzf /data/baseball.sql.tar.gz -C /data/
+   mysql -h localhost -u root -pCsridhar2601@ -e "CREATE DATABASE baseball"
     mysql -h localhost -u root -pCsridhar2601@ baseball < /data/baseball.sql
 else
     echo "baseball database already exists"
 fi
-# Make sure to replace the path
+
 echo "Done!"
 
 # Calculating the rolling 100 day Batting Average
@@ -23,7 +22,7 @@ SELECT
     SUM(atBat) AS total_at_bats,
     CAST(SUM(hit) AS FLOAT) / NULLIF(SUM(atBat), 0) AS batting_average
 FROM
-    batter_counts bc
+    batter_counts
 GROUP BY
     batter;
 
@@ -37,50 +36,33 @@ SELECT
     SUM(atBat) AS total_at_bats,
     CAST(SUM(hit) AS FLOAT) / NULLIF(SUM(atBat), 0) AS batting_average
 FROM
-    batter_counts AS bc
-INNER JOIN game ON bc.game_id = game.game_id
+    batter_counts
+INNER JOIN game ON batter_counts.game_id = game.game_id
 GROUP BY
     Batter, For_Year
 ORDER BY
     Batter, For_Year;
 
-ALTER TABLE batt_avg_annual ADD PRIMARY KEY (batter, For_Year);
+ALTER TABLE batt_avg_annual ADD PRIMARY KEY (Batter, For_Year);
 
 SELECT * FROM batt_avg_annual;
-
-CREATE TABLE IF NOT EXISTS game_bat_int AS
-SELECT
-    bc.game_id,
-    bc.batter,
-    local_date,
-    bc.hit,
-    bc.atBat,
-    g.local_date
-FROM
-    batter_counts bc
-INNER JOIN game g
-ON bc.game_id = g.game_id;
-
-SELECT * FROM game_bat_int LIMIT 0,20;
-
-ALTER TABLE game_bat_int ADD INDEX batter_index(batter);
-
-ALTER TABLE game_bat_int ADD INDEX date_index(local_date);
 
 DROP TABLE IF EXISTS temp_roll_avg_intermediate;
 CREATE TABLE IF NOT EXISTS temp_roll_avg_intermediate AS (
     SELECT
-        bc.batter,
-        DATE(g.local_date),
-        bc.hit,
-        bc.atBat
+        batter_counts.batter,
+        DATE(game.local_date),
+        batter_counts.hit,
+        batter_counts.atBat
     FROM
-        batter_counts AS bc
-    LEFT JOIN game AS g
-    ON bc.game_id = g.game_id
+        batter_counts
+    LEFT JOIN game
+    ON batter_counts.game_id = game.game_id
     GROUP BY
-        batter,
-        local_date
+        batter_counts.batter,
+        DATE(game.local_date),
+        batter_counts.hit,
+        batter_counts.atBat
 );
 CREATE INDEX idx_batter ON temp_roll_avg_intermediate(batter);
 CREATE INDEX idx_date ON temp_roll_avg_intermediate(local_date);
@@ -106,6 +88,11 @@ CREATE TEMPORARY TABLE IF NOT EXISTS temp_roll_avg AS (
 );
 
 SELECT * FROM temp_roll_avg ORDER BY local_date DESC;
-"
 
+SELECT DISTINCT bc.batter,
+(SELECT CAST(SUM(hit) AS FLOAT) / NULLIF(SUM(atBat), 0)
+FROM batter_counts bc2
+WHERE bc2.batter = bc.batter AND bc2.game_id = '12560') AS batting_average
+FROM batter_counts bc
+WHERE bc.game_id = '12560';"> /output_file.txt
 echo "Done!"
