@@ -1,10 +1,11 @@
 #!/bin/bash
-set -e
 
-if [[ -z "$(mysql -h localhost -u root -pCsridhar2601@ -e 'SHOW DATABASES LIKE "baseball"')" ]]; then
+sleep 30
+
+if [[ -z "$(mysql -h maria_db -u root -pCsridhar2601@ -e 'SHOW DATABASES LIKE "baseball"')" ]]; then
     echo "Creating baseball database"
-   mysql -h localhost -u root -pCsridhar2601@ -e "CREATE DATABASE baseball"
-    mysql -h localhost -u root -pCsridhar2601@ baseball < /data/baseball.sql
+    mysql -h maria_db -u root -pCsridhar2601@ -e "CREATE DATABASE baseball"
+    mysql -h maria_db -u root -pCsridhar2601@ baseball < baseball.sql
 else
     echo "baseball database already exists"
 fi
@@ -13,7 +14,7 @@ echo "Done!"
 
 # Calculating the rolling 100 day Batting Average
 # Skip intermediary results if they already exist
-mysql -h localhost -u root -pCsridhar2601@ -e "USE baseball;
+mysql -h maria_db -u root -pCsridhar2601@ -e "USE baseball;
 
 CREATE TABLE IF NOT EXISTS batt_avg_hist AS
 SELECT
@@ -94,5 +95,5 @@ SELECT DISTINCT bc.batter,
 FROM batter_counts bc2
 WHERE bc2.batter = bc.batter AND bc2.game_id = '12560') AS batting_average
 FROM batter_counts bc
-WHERE bc.game_id = '12560';"> /output_file.txt
+WHERE bc.game_id = '12560';"> output_file.csv
 echo "Done!"
