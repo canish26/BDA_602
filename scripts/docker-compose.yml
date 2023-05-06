@@ -1,19 +1,23 @@
-version: "3"
+version: "3.3"
 
 services:
-  db:
+  maria_db:
     image: mariadb:latest
+    container_name: maria_db
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: Csridhar2601@
-    volumes:
-      - db_data:/var/lib/mysql
+
+    ports:
+      - 3303:3306
+
   loader:
+    container_name: loader
     build: .
     depends_on:
-      - db
+      - maria_db
     volumes:
-      - ./data:/data
+      - ./:/app
+    command: ["/bin/bash", "./run.sh"]
 
-volumes:
-  db_data:
+
