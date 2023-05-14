@@ -155,5 +155,5 @@ Overall, the Random Forest Classifier had the highest accuracy score among the m
 
 
 ## RESULTS AND CONCLUSION
-![WHIP PLOT](https://drive.google.com/file/d/1dWj6m0HIIRYEk471TZvUOZQ-haGyXFe-/view?usp=share_link)
+![WHIP PLOT](https://drive.google.com/file/d/1dWj6m0HIIRYEk471TZvUOZQ-haGyXFe-/view?usp=sharing)
 ![ROC Curve](https://drive.google.com/file/d/1dWj6m0HIIRYEk471TZvUOZQ-haGyXFe-/view?usp=share_link)
