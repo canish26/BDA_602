@@ -101,6 +101,8 @@ Feature engineering involves transforming raw data into features that are more m
 
 ### Continuous Features:
 
+![WHIP PLOT](https://github.com/canish26/BDA_602/blob/final/scripts/mean_WHIP.png)
+
 Batting Average: Batting average is a continuous feature that measures a player's success in hitting the ball. It can be used as a feature to evaluate a player's offensive performance.
 On-Base Percentage: On-base percentage (OBP) is a continuous feature that measures a player's ability to reach base, whether through a hit or a walk. It is a more advanced metric than batting average and is commonly used in sabermetrics.
 Slugging Percentage: Slugging percentage (SLG) is a continuous feature that measures a player's power, or ability to hit for extra bases. It is calculated by dividing the total number of bases a player has by their total number of at-bats.
@@ -160,5 +162,5 @@ Overall, the Random Forest Classifier had the highest accuracy score among the m
 
 
 ## RESULTS AND CONCLUSION
-![WHIP PLOT](https://github.com/canish26/BDA_602/blob/final/scripts/mean_WHIP.png)
-![ROC Curve](https://github.com/canish26/BDA_602/blob/final/scripts/ROC.png)
+All the results as shown and such as the correlatiions and the more accuracy, F1 scores shows that the Linear regression is the best performing models and also predicts to the Home Team Wins
+![Linear Regression ROC Curve](https://github.com/canish26/BDA_602/blob/final/scripts/ROC.png)
