@@ -1,0 +1,28 @@
+version: "3.3"
+
+services:
+  maria_db:
+    image: mariadb:latest
+    container_name: maria_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Csridhar2601@
+
+    ports:
+      - 3303:3306
+
+  python:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      image: python_image
+      container_name: python
+
+  loader:
+    container_name: loader
+    build: .
+    depends_on:
+      - maria_db
+    volumes:
+      - ./:/app
+    command: ["/bin/bash", "./run.sh"]
