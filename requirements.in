@@ -1,1 +1,16 @@
 numpy
+flask
+mysql-connector-python
+pyspark
+plotly
+sqlalchemy
+mariadb
+sklearn
+pandas
+seaborn
+scikit-learn
+statsmodels
+patsy
+File_path
+pingouin
+jinja2
