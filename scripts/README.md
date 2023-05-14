@@ -38,6 +38,11 @@ However, like any dataset, this one also has its issues. For example, the target
 
 Moreover, the data in the dataset has other errors, which will be highlighted in the subsequent sections. The aim of this project is to deal with these issues and create a reliable statistical model for predicting whether HomeTeam wins for a baseball game.
 ## TERMINOLOGY:
+
+![baseball stats](https://www.baseballmonkey.com/media/magefan_blog/Baseball_Stats_You_Need_To_Know.jpeg)
+
+![various stats](https://images.squarespace-cdn.com/content/v1/54c6fcffe4b044974286fe13/1497044444530-YMUL7Y52LI1JX8DIEULV/baseball%3Astats.jpg?format=2500w)
+
 These are some of the features used in this project 
 
 BFP: total batters faced in historical games(number of plate appearances for an offense is 3×(Innings) + (Runs scored) + (Runners left on base).)
